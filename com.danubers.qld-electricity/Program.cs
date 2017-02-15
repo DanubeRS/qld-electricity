@@ -1,12 +1,19 @@
 ﻿using System;
 using System.IO;
-using com.danubers.qld_electricity;
+using System.Net.Http;
+using System.Threading;
+using System.Threading.Tasks;
+using Danubers.QldElectricity;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace ConsoleApplication
 {
     public class Program
     {
+        private static ILogger<Program> _logger;
+
         public static void Main(string[] args)
         {
             var host = new WebHostBuilder()
@@ -15,7 +22,26 @@ namespace ConsoleApplication
                 .UseStartup<Startup>()
                 .Build();
 
-            host.Run();
+            _logger = host.Services.GetService<ILoggerFactory>().CreateLogger<Program>();
+            var cts = new CancellationTokenSource();
+            Task.Run(async () =>
+            {
+                _logger.LogDebug("Starting QldElectricity Application");
+                using (var backgroundService = host.Services.GetService<IBackgroundService>())
+                {
+                    _logger.LogInformation("Calling background service initiation");
+                    await backgroundService.Initiate();
+                    _logger.LogInformation("Running host");
+                    var background = backgroundService.RunServices(cts.Token);
+                    host.Run(cts.Token);
+                    cts.Cancel();
+
+                    await background;
+                    _logger.LogInformation("Host requested close");
+                }
+
+            }, cts.Token).GetAwaiter().GetResult();
+            //Load in background service singleton
         }
     }
 }

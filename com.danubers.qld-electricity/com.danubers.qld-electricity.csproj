@@ -9,6 +9,8 @@
     <ApplicationIcon />
     <OutputTypeEx>exe</OutputTypeEx>
     <StartupObject />
+    <AssemblyName>Danubers.QldElectricity</AssemblyName>
+    <RootNamespace>Danubers.QldElectricity</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
