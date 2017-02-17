@@ -88,7 +88,7 @@ namespace Danubers.QldElectricity
         Task Stop(CancellationToken ct);
     }
 
-    internal interface IDataProvider
+    public interface IDataProvider
     {
         bool IsReady();
         Task Initialise();
@@ -147,7 +147,24 @@ namespace Danubers.QldElectricity
                             try
                             {
                                 await connection.ExecuteAsync(
-                                    "CREATE TABLE Data (Id INTEGER PRIMARY KEY, Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
+                                    "CREATE TABLE Energex (Id INTEGER PRIMARY KEY, Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
+                                await connection.ExecuteAsync(
+                                    "CREATE TABLE BomSites" +
+                                    "(Id STRING PRIMARY KEY," +
+                                    "Wmo STRING NOT NULL," +
+                                    "HistoryProduct STRING NOT NULL,"+
+                                    "Name STRING NOT NULL)");
+                                await connection.ExecuteAsync(
+                                    "CREATE TABLE BomReadings (" +
+                                    "Id INTEGER PRIMARY KEY," +
+                                    "Timestamp INTEGER NOT NULL," +
+                                    "SiteId STRING NOT NULL," +
+                                    "AirTemp REAL," +
+                                    "Dewpoint REAL," +
+                                    "CloudOktas INT," +
+                                    "WindSpeed INT," +
+                                    "WindDir STRING)"
+                                );
                             }
                             catch (Exception e)
                             {

@@ -2,14 +2,15 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Autofac;
 using Dapper;
+using Microsoft.AspNetCore.Routing.Internal;
 using Microsoft.Extensions.Logging;
+using Newtonsoft.Json;
 
 namespace Danubers.QldElectricity.Injection
 {
@@ -24,6 +25,7 @@ namespace Danubers.QldElectricity.Injection
             builder.RegisterType<DefaultBackgroundService>().As<IBackgroundService>().SingleInstance().ExternallyOwned();
 
             builder.RegisterType<EnergexProcessor>().As<IBackgroundProcessor>();
+            builder.RegisterType<BomProcessor>().As<IBackgroundProcessor>();
         }
     }
 
@@ -74,9 +76,9 @@ namespace Danubers.QldElectricity.Injection
                                 {
                                     try
                                     {
-                                    logger.LogDebug("Logging to Datastore");
+                                        logger.LogDebug("Logging to Datastore");
                                         await connection.ExecuteAsync(
-                                            "INSERT INTO Data (Timestamp, Type, Value) VALUES (@Timestamp, @Type, @Value)",
+                                            "INSERT INTO Energex (Timestamp, Type, Value) VALUES (@Timestamp, @Type, @Value)",
                                             new DataRowPayload("Energex", responseInt));
                                         logger.LogDebug("Successfully logged");
                                     }
@@ -88,7 +90,7 @@ namespace Danubers.QldElectricity.Injection
                             }
                         }
                     }
-                    await Task.Delay(5000, ct);
+                    await Task.Delay(30000, ct);
                 }
             });
         }
@@ -105,6 +107,88 @@ namespace Danubers.QldElectricity.Injection
         {
             _getterAction.Complete();
         }
+    }
+
+    internal class BomStationResponseModel
+    {
+        [JsonProperty("observations")]
+        public BomStationsObservationsModel Observations { get; set; }
+    }
+
+    internal class BomStationsObservationsModel
+    {
+        [JsonProperty(PropertyName = "header")]
+        public IEnumerable<BomStationResponseModelHeaderModel> Header { get; set; }
+        [JsonProperty(PropertyName = "data")]
+        public IEnumerable<BomStationReadingModel> Readings { get; set; }
+    }
+
+    internal class BomStationReadingModel
+    {
+        [JsonProperty("aifstime_utc")]
+//        [JsonConverter(typeof(AIFSTImeConverter))]
+        public string Timestamp { get; set; }
+        [JsonProperty("air_temp")]
+        public float? AirTemp { get; set; }
+        [JsonProperty("dewpt")]
+        public float? Dewpoint { get; set; }
+        [JsonProperty("cloud_oktas")]
+        public int? CloudOktas { get; set; }
+        [JsonProperty("wind_spd_kmh")]
+        public int? WindSpeed { get; set; }
+        [JsonProperty("wind_dir")]
+        public string WindDir { get; set; }
+    }
+
+    internal class AIFSTImeConverter : JsonConverter
+    {
+        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+        {
+            throw new NotImplementedException();
+        }
+
+        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+        {
+            var inputString = reader.ReadAsString();
+            if (inputString == null)
+                throw new JsonReaderException("Incompatible input type.");
+
+            int year;
+            int month;
+            int day;
+            int hour;
+            int minute;
+
+            var @throw = new Action(() => { throw new JsonReaderException("Incorrect string format"); });
+            //Parse values
+            if (!int.TryParse(inputString.Substring(0, 4), out year))
+                @throw();
+            if (!int.TryParse(inputString.Substring(4, 2), out month))
+                @throw();
+            if (!int.TryParse(inputString.Substring(6, 2), out day))
+                @throw();
+            if (!int.TryParse(inputString.Substring(8, 2), out hour))
+                @throw();
+            if (!int.TryParse(inputString.Substring(10, 2), out minute))
+                @throw();
+            return new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Utc);
+        }
+
+        public override bool CanConvert(Type objectType)
+        {
+            return objectType == typeof(string);
+        }
+    }
+
+    internal class BomStationResponseModelHeaderModel
+    {
+        [JsonProperty(PropertyName = "ID")]
+        public string ID { get; set; }
+        [JsonProperty(PropertyName = "product_name")]
+        public string Name { get; set; }
+        [JsonProperty(PropertyName = "time_zone")]
+        public string TimeZone { get; set; }
+
     }
 
     internal class DataRowPayload
