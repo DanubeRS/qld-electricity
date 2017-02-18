@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using Autofac;
+using Danubers.QldElectricity.Services;
 using Dapper;
 using Microsoft.AspNetCore.Routing.Internal;
 using Microsoft.Extensions.Logging;
@@ -23,6 +24,7 @@ namespace Danubers.QldElectricity.Injection
         protected override void Load(ContainerBuilder builder)
         {
             builder.RegisterType<DefaultBackgroundService>().As<IBackgroundService>().SingleInstance().ExternallyOwned();
+            builder.RegisterType<DataService>().As<IDataService>().SingleInstance();
 
             builder.RegisterType<EnergexProcessor>().As<IBackgroundProcessor>();
             builder.RegisterType<BomProcessor>().As<IBackgroundProcessor>();
@@ -79,7 +81,7 @@ namespace Danubers.QldElectricity.Injection
                                         logger.LogDebug("Logging to Datastore");
                                         await connection.ExecuteAsync(
                                             "INSERT INTO Energex (Timestamp, Type, Value) VALUES (@Timestamp, @Type, @Value)",
-                                            new DataRowPayload("Energex", responseInt));
+                                            new EnergexPayload("Energex", responseInt));
                                         logger.LogDebug("Successfully logged");
                                     }
                                     catch (Exception e)
@@ -154,17 +156,18 @@ namespace Danubers.QldElectricity.Injection
 
     }
 
-    internal class DataRowPayload
+    internal class EnergexPayload
     {
-        public DataRowPayload(string energex, int responseInt)
+        public EnergexPayload() { }
+        public EnergexPayload(string energex, int responseInt)
         {
-            Type = energex;
+            this.Type = energex;
             Timestamp = DateTime.UtcNow;
             Value = responseInt;
         }
 
-        public string Type { get; }
-        public DateTime Timestamp { get; }
-        public float Value { get; }
+        public string Type { get; set; }
+        public DateTime Timestamp { get; set; }
+        public float Value { get; set; }
     }
 }

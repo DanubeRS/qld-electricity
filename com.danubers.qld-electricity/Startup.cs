@@ -16,6 +16,7 @@ namespace Danubers.QldElectricity
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            services.AddMvc();
             var builder = new ContainerBuilder();
             builder.RegisterModule<Injection.Core>();
             builder.Populate(services);
@@ -35,6 +36,7 @@ namespace Danubers.QldElectricity
             //Default Files MUST be called before static files https://docs.microsoft.com/en-us/aspnet/core/fundamentals/static-files
             app.UseDefaultFiles();
             app.UseStaticFiles();
+            app.UseMvc();
         }
     }
 }
