@@ -4,13 +4,19 @@
   "description": "A simple tool to see and compare electricity usage of Queensland, Australia",
   "main": "index.js",
   "scripts": {
-    "dev": "webpack --watch"
+    "prod": "webpack --progress --colors --config ./webpack.production.config.js",
+    "dev": "webpack --progress --colors --watch",
+    "reinstall": "rm -r node_modules && npm i"
   },
   "keywords": [],
   "author": "Daniel Park",
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^7.0.5",
+    "@types/react": "^15.0.11",
+    "@types/react-dom": "^0.14.23",
+    "react": "^15.4.2",
+    "react-dom": "^15.4.2",
     "ts-loader": "^2.0.0",
     "typescript": "^2.1.6",
     "webpack": "^2.2.1"

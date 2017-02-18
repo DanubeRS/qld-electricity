@@ -1,7 +1,7 @@
 var path = require("path");
 
 var config = {
-    entry: ["./src/app.ts"],
+    entry: ["./src/app.tsx"],
     output: {
         path: path.resolve(__dirname, "wwwroot/dist"),
 
