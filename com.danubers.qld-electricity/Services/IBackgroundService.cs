@@ -147,23 +147,22 @@ namespace Danubers.QldElectricity
                             try
                             {
                                 await connection.ExecuteAsync(
-                                    "CREATE TABLE Energex (Id INTEGER PRIMARY KEY, Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
+                                    "CREATE TABLE Energex (Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
                                 await connection.ExecuteAsync(
                                     "CREATE TABLE BomSites" +
-                                    "(Id STRING PRIMARY KEY," +
-                                    "Wmo STRING NOT NULL," +
+                                    "(Wmo STRING NOT NULL," +
                                     "HistoryProduct STRING NOT NULL,"+
                                     "Name STRING NOT NULL)");
                                 await connection.ExecuteAsync(
                                     "CREATE TABLE BomReadings (" +
-                                    "Id INTEGER PRIMARY KEY," +
                                     "Timestamp INTEGER NOT NULL," +
                                     "SiteId STRING NOT NULL," +
                                     "AirTemp REAL," +
                                     "Dewpoint REAL," +
                                     "CloudOktas INT," +
                                     "WindSpeed INT," +
-                                    "WindDir STRING)"
+                                    "WindDir STRING," +
+                                    "FOREIGN KEY(SiteId) REFERENCES BomSites(Id))"
                                 );
                             }
                             catch (Exception e)

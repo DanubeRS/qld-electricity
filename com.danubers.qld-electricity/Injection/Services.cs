@@ -90,7 +90,7 @@ namespace Danubers.QldElectricity.Injection
                             }
                         }
                     }
-                    await Task.Delay(30000, ct);
+                    await Task.Delay(1000, ct);
                 }
             });
         }
@@ -125,9 +125,12 @@ namespace Danubers.QldElectricity.Injection
 
     internal class BomStationReadingModel
     {
+
         [JsonProperty("aifstime_utc")]
 //        [JsonConverter(typeof(AIFSTImeConverter))]
         public string Timestamp { get; set; }
+        [JsonProperty("sort_order")]
+        public int SortOrder { get; set; }
         [JsonProperty("air_temp")]
         public float? AirTemp { get; set; }
         [JsonProperty("dewpt")]
@@ -140,52 +143,12 @@ namespace Danubers.QldElectricity.Injection
         public string WindDir { get; set; }
     }
 
-    internal class AIFSTImeConverter : JsonConverter
-    {
-        public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
-        {
-            throw new NotImplementedException();
-        }
-
-        public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
-        {
-            var inputString = reader.ReadAsString();
-            if (inputString == null)
-                throw new JsonReaderException("Incompatible input type.");
-
-            int year;
-            int month;
-            int day;
-            int hour;
-            int minute;
-
-            var @throw = new Action(() => { throw new JsonReaderException("Incorrect string format"); });
-            //Parse values
-            if (!int.TryParse(inputString.Substring(0, 4), out year))
-                @throw();
-            if (!int.TryParse(inputString.Substring(4, 2), out month))
-                @throw();
-            if (!int.TryParse(inputString.Substring(6, 2), out day))
-                @throw();
-            if (!int.TryParse(inputString.Substring(8, 2), out hour))
-                @throw();
-            if (!int.TryParse(inputString.Substring(10, 2), out minute))
-                @throw();
-            return new DateTime(year, month, day, hour, minute, 0, DateTimeKind.Utc);
-        }
-
-        public override bool CanConvert(Type objectType)
-        {
-            return objectType == typeof(string);
-        }
-    }
-
     internal class BomStationResponseModelHeaderModel
     {
         [JsonProperty(PropertyName = "ID")]
         public string ID { get; set; }
-        [JsonProperty(PropertyName = "product_name")]
-        public string Name { get; set; }
+        [JsonProperty(PropertyName = "name")]
+        public string StationName { get; set; }
         [JsonProperty(PropertyName = "time_zone")]
         public string TimeZone { get; set; }
 
