@@ -80,7 +80,7 @@ namespace Danubers.QldElectricity.Injection
                                         {
                                             var responseString = await response.Content.ReadAsStringAsync();
                                             var responseModel = JsonConvert.DeserializeObject<BomStationResponseModel>(responseString);
-                                            logger.LogInformation($"Found {responseModel.Observations.Header.First().StationName}. Latest Temp {responseModel.Observations.Readings.OrderBy(r => r.Timestamp).First().AirTemp} at {TimestampConverter(responseModel.Observations.Readings.OrderBy(r => r.Timestamp).First().Timestamp)}");
+                                            logger.LogInformation($"Found {responseModel.Observations.Header.First().StationName}. Latest Temp {responseModel.Observations.Readings.OrderBy(r => r.Timestamp).First().AirTemp} at {TimestampConverter(responseModel.Observations.Readings.OrderBy(r => r.Timestamp).First().Timestamp).ToLocalTime()}");
                                             IEnumerable<BomStationReadingModel> readings = responseModel.Observations.Readings.OrderBy(o => o.SortOrder).ToArray();
                                             var currentReading = await GetLatestReading(station.Id);
                                             if (currentReading != null && TimestampConverter(readings.First().Timestamp) ==
