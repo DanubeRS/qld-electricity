@@ -2,9 +2,9 @@ var path = require("path");
 
 var config = {
     entry: ["./src/app.tsx"],
+    devtool: "source-map",
     output: {
         path: path.resolve(__dirname, "wwwroot/dist"),
-
         filename: "bundle.js"
     },
     resolve: {
