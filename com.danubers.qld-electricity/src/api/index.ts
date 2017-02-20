@@ -5,8 +5,6 @@
 // </auto-generated>
 //----------------------
 
-module Danubers.QldElectricity {
-namespace API {
 
 export class Client {
     private baseUrl: string; 
@@ -22,12 +20,12 @@ export class Client {
      * Gets power consumption data, with an optional window specified
      * @return Success
      */
-    apiDataPowerGet(begin: string, end: string): Promise<PowerDataResponseModel> {
+    apiDataPowerGet(begin: Date, end: Date): Promise<PowerDataResponseModel> {
         let url_ = this.baseUrl + "/api/data/power?";
         if (begin !== undefined)
-            url_ += "begin=" + encodeURIComponent("" + begin) + "&"; 
+            url_ += "begin=" + encodeURIComponent("" + begin.toJSON()) + "&"; 
         if (end !== undefined)
-            url_ += "end=" + encodeURIComponent("" + end) + "&";
+            url_ += "end=" + encodeURIComponent("" + end.toJSON()) + "&";
 
         let options_ = <RequestInit>{
             method: "GET",
@@ -48,15 +46,13 @@ export class Client {
 
             if (status === 200) {
                 let result200: PowerDataResponseModel = null;
-                let resultData200 = responseText === "" ? null : JSON.parse(responseText, this.jsonParseReviver);
-                result200 = resultData200 ? PowerDataResponseModel.fromJS(resultData200) : new PowerDataResponseModel();
+                result200 = responseText === "" ? null : <PowerDataResponseModel>JSON.parse(responseText, this.jsonParseReviver);
                 return result200;
             } else if (status === 404) {
                 this.throwException("A server error occurred.", status, responseText);
             } else if (status === 400) {
                 let result400: ErrorResponseModel = null;
-                let resultData400 = responseText === "" ? null : JSON.parse(responseText, this.jsonParseReviver);
-                result400 = resultData400 ? ErrorResponseModel.fromJS(resultData400) : new ErrorResponseModel();
+                result400 = responseText === "" ? null : <ErrorResponseModel>JSON.parse(responseText, this.jsonParseReviver);
                 this.throwException("A server error occurred.", status, responseText, result400);
             } else if (status !== 200 && status !== 204) {
                 this.throwException("An unexpected server error occurred.", status, responseText);
@@ -74,179 +70,45 @@ export class Client {
 }
 
 /** Response model for power consumption data */
-export class PowerDataResponseModel { 
+export interface PowerDataResponseModel {
     /** Start time of the current model payload */
-    readonly startTime?: string; 
+    readonly startTime?: Date;
     /** End time of the current model payload */
-    readonly endTime?: string; 
+    readonly endTime?: Date;
     /** Data nodes constituting the current model */
     readonly nodes?: PowerDataNodeModel[];
-    constructor(data?: any) {
-        if (data !== undefined) {
-            this.startTime = data["startTime"] !== undefined ? data["startTime"] : undefined;
-            this.endTime = data["endTime"] !== undefined ? data["endTime"] : undefined;
-            if (data["nodes"] && data["nodes"].constructor === Array) {
-                this.nodes = [];
-                for (let item of data["nodes"])
-                    this.nodes.push(PowerDataNodeModel.fromJS(item));
-            }
-        }
-    }
-
-    static fromJS(data: any): PowerDataResponseModel {
-        return new PowerDataResponseModel(data);
-    }
-
-    toJS(data?: any) {
-        data = data === undefined ? {} : data;
-        data["startTime"] = this.startTime !== undefined ? this.startTime : undefined;
-        data["endTime"] = this.endTime !== undefined ? this.endTime : undefined;
-        if (this.nodes && this.nodes.constructor === Array) {
-            data["nodes"] = [];
-            for (let item of this.nodes)
-                data["nodes"].push(item.toJS());
-        }
-        return data; 
-    }
-
-    toJSON() {
-        return JSON.stringify(this.toJS());
-    }
-
-    clone() {
-        const json = this.toJSON();
-        return new PowerDataResponseModel(JSON.parse(json));
-    }
 }
 
 /** Data node for power data, representing power statistics at a set timestamp */
-export class PowerDataNodeModel { 
+export interface PowerDataNodeModel {
     /** Timestamp of the current node model */
-    readonly timestamp?: string; 
+    readonly timestamp?: Date;
     /** Provider of the power consumption data */
-    readonly provider?: string; 
+    readonly provider?: string;
     /** Value of the power state at the timestamp */
     readonly value?: PowerDataNodeValueModel;
-    constructor(data?: any) {
-        if (data !== undefined) {
-            this.timestamp = data["timestamp"] !== undefined ? data["timestamp"] : undefined;
-            this.provider = data["provider"] !== undefined ? data["provider"] : undefined;
-            this.value = data["value"] ? PowerDataNodeValueModel.fromJS(data["value"]) : undefined;
-        }
-    }
-
-    static fromJS(data: any): PowerDataNodeModel {
-        return new PowerDataNodeModel(data);
-    }
-
-    toJS(data?: any) {
-        data = data === undefined ? {} : data;
-        data["timestamp"] = this.timestamp !== undefined ? this.timestamp : undefined;
-        data["provider"] = this.provider !== undefined ? this.provider : undefined;
-        data["value"] = this.value ? this.value.toJS() : undefined;
-        return data; 
-    }
-
-    toJSON() {
-        return JSON.stringify(this.toJS());
-    }
-
-    clone() {
-        const json = this.toJSON();
-        return new PowerDataNodeModel(JSON.parse(json));
-    }
 }
 
 /** Values (absolute and derived) of current power usage */
-export class PowerDataNodeValueModel { 
+export interface PowerDataNodeValueModel {
     /** Instantaneous absolute value of power consumption */
-    readonly instantaneous?: number; 
+    readonly instantaneous?: number;
     /** Cumulative power consumption, usually from a window defined in the parent payload */
-    readonly cumulative?: number; 
+    readonly cumulative?: number;
     /** Change in power consumption since the last data node. Used to identify rate of power consumption change */
     readonly trend?: number;
-    constructor(data?: any) {
-        if (data !== undefined) {
-            this.instantaneous = data["instantaneous"] !== undefined ? data["instantaneous"] : undefined;
-            this.cumulative = data["cumulative"] !== undefined ? data["cumulative"] : undefined;
-            this.trend = data["trend"] !== undefined ? data["trend"] : undefined;
-        }
-    }
-
-    static fromJS(data: any): PowerDataNodeValueModel {
-        return new PowerDataNodeValueModel(data);
-    }
-
-    toJS(data?: any) {
-        data = data === undefined ? {} : data;
-        data["instantaneous"] = this.instantaneous !== undefined ? this.instantaneous : undefined;
-        data["cumulative"] = this.cumulative !== undefined ? this.cumulative : undefined;
-        data["trend"] = this.trend !== undefined ? this.trend : undefined;
-        return data; 
-    }
-
-    toJSON() {
-        return JSON.stringify(this.toJS());
-    }
-
-    clone() {
-        const json = this.toJSON();
-        return new PowerDataNodeValueModel(JSON.parse(json));
-    }
 }
 
 /** Generic error response model, containing message, code, and other detailed information */
-export class ErrorResponseModel { 
+export interface ErrorResponseModel {
     /** Error type Id */
-    readonly id?: number; 
+    readonly id?: number;
     /** Unique request Id */
-    readonly requestId?: string; 
+    readonly requestId?: string;
     /** Friendly error message */
-    readonly message?: string; 
+    readonly message?: string;
     /** Additional error context payload */
     payload?: any;
-    constructor(data?: any) {
-        if (data !== undefined) {
-            this.id = data["id"] !== undefined ? data["id"] : undefined;
-            this.requestId = data["requestId"] !== undefined ? data["requestId"] : undefined;
-            this.message = data["message"] !== undefined ? data["message"] : undefined;
-            if (data["payload"]) {
-                this.payload = {};
-                for (let key in data["payload"]) {
-                    if (data["payload"].hasOwnProperty(key))
-                        this.payload[key] = data["payload"][key] !== undefined ? data["payload"][key] : undefined;
-                }
-            }
-        }
-    }
-
-    static fromJS(data: any): ErrorResponseModel {
-        return new ErrorResponseModel(data);
-    }
-
-    toJS(data?: any) {
-        data = data === undefined ? {} : data;
-        data["id"] = this.id !== undefined ? this.id : undefined;
-        data["requestId"] = this.requestId !== undefined ? this.requestId : undefined;
-        data["message"] = this.message !== undefined ? this.message : undefined;
-        if (this.payload) {
-            data["payload"] = {};
-            for (let key in this.payload) {
-                if (this.payload.hasOwnProperty(key))
-                    data["payload"][key] = this.payload[key] !== undefined ? this.payload[key] : undefined;
-            }
-        }
-        return data; 
-    }
-
-    toJSON() {
-        return JSON.stringify(this.toJS());
-    }
-
-    clone() {
-        const json = this.toJSON();
-        return new ErrorResponseModel(JSON.parse(json));
-    }
 }
 
 export class SwaggerException extends Error {
@@ -263,7 +125,4 @@ export class SwaggerException extends Error {
         this.response = response;
         this.result = result;
     }
-}
-
-}
 }

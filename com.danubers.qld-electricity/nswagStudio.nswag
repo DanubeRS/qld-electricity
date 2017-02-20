@@ -9,13 +9,13 @@
   "codeGenerators": {
     "swaggerToTypeScriptClient": {
       "className": "{controller}Client",
-      "moduleName": "Danubers.QldElectricity",
-      "namespace": "API",
+      "moduleName": "",
+      "namespace": "",
       "typeScriptVersion": 2.0,
       "template": "Fetch",
       "promiseType": "Promise",
-      "dateTimeType": "String",
-      "nullValue": "Undefined",
+      "dateTimeType": "Date",
+      "nullValue": "Null",
       "generateClientClasses": true,
       "generateClientInterfaces": false,
       "wrapDtoExceptions": false,
@@ -24,10 +24,10 @@
       "generateDtoTypes": true,
       "operationGenerationMode": "MultipleClientsFromOperationId",
       "markOptionalProperties": true,
-      "typeStyle": "Class",
+      "typeStyle": "Interface",
       "generateDefaultValues": true,
       "excludedTypeNames": [],
-      "output": "../../../../src/api/index.ts"
+      "output": "src/api/index.ts"
     },
     "swaggerToCSharpClient": {
       "generateClientClasses": true,

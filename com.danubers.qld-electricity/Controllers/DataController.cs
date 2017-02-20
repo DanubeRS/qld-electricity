@@ -37,7 +37,7 @@ namespace Danubers.QldElectricity.Controllers
         public async Task<IActionResult> GetPowerData([FromQuery(Name = "begin")]DateTime? startDate = null, [FromQuery(Name = "end")]DateTime? endDate = null)
         {
             var dateTime = DateTime.UtcNow;
-            if (startDate.HasValue && endDate > dateTime)
+            if (startDate.HasValue && endDate.Value.ToUniversalTime() > dateTime.ToUniversalTime())
             {
                 return BadRequest(new ErrorResponseModel
                 {
@@ -51,7 +51,7 @@ namespace Danubers.QldElectricity.Controllers
                     }
                 });
             }
-            if (startDate >= endDate)
+            if (startDate.HasValue && endDate.HasValue && startDate.Value.ToUniversalTime() >= endDate.Value.ToUniversalTime())
             {
                 return BadRequest(new ErrorResponseModel
                 {
@@ -65,7 +65,7 @@ namespace Danubers.QldElectricity.Controllers
                     }
                 });
             }
-            var val = await _dataService.GetEnergyData(startDate, endDate);
+            var val = await _dataService.GetEnergyData(startDate.Value.ToUniversalTime(), endDate.Value.ToUniversalTime());
             var model = new PowerDataResponseModel()
             {
                 StartTime = null,
