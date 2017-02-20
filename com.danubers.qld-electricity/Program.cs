@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ConsoleApplication
 {
+#pragma warning disable CS1591
     public class Program
     {
         private static ILogger<Program> _logger;

@@ -13,6 +13,10 @@
     <RootNamespace>Danubers.QldElectricity</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile>bin\Debug\netcoreapp1.1\swaggerDoc.xml</DocumentationFile>
+  </PropertyGroup>
+
   <ItemGroup>
     <Folder Include="wwwroot\" />
   </ItemGroup>
@@ -27,7 +31,11 @@
     <PackageReference Include="Microsoft.Data.SQLite" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="1.0.0-rc1" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.104" />
   </ItemGroup>
-
+  <Target Name="AfterBuild">
+    <Exec Command="$(NSwagExe) webapi2swagger /assembly:$(OutDir)/com.danubers.qld-electricity.dll /output:swagger.json" />
+    <Exec Command="$(NSwagExe) swagger2tsclient /input:swagger.json /output:src/api/client.ts" />
+  </Target>
 </Project>
