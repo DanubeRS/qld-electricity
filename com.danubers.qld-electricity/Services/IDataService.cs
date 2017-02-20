@@ -10,7 +10,7 @@ namespace Danubers.QldElectricity.Services
     public interface IDataService
     {
         Task<IOrderedEnumerable<EnergyDataPoint>> GetEnergyData(DateTime? startTime = null, DateTime? endTime = null);
-        Task<IOrderedEnumerable<WeatherDataPoint>> GetWeatherData();
+        Task<IOrderedEnumerable<WeatherDataPoint>> GetWeatherData(string stationId, DateTime? startTime = null, DateTime? endTime = null);
     }
 
     public class DataService : IDataService
@@ -50,10 +50,42 @@ namespace Danubers.QldElectricity.Services
             }).OrderBy(v => v.Timestamp);
         }
 
-        public Task<IOrderedEnumerable<WeatherDataPoint>> GetWeatherData()
+        public async Task<IOrderedEnumerable<WeatherDataPoint>> GetWeatherData(string siteId, DateTime? startTime = null, DateTime? endTime = null)
         {
-            throw new NotImplementedException();
+            IOrderedEnumerable<WeatherDataPayload> values;
+            var query = "SELECT * FROM BomReadings WHERE 1 == 1";
+
+            //Optional limiters
+            if (!string.IsNullOrEmpty(siteId))
+                query += " AND SiteId == @siteId";
+            if (startTime.HasValue)
+                query += " AND Timestamp >= @startTime";
+            if (endTime.HasValue)
+                query += " AND Timestamp <= @endTime";
+
+            var @params = new
+            {
+                startTime,
+                endTime,
+                siteId
+            };
+
+            using (var conn = _dataProvider.GetConnection())
+            {
+                values = (await conn.QueryAsync<WeatherDataPayload>(query, @params)).OrderBy(e => e.Timestamp);
+            }
+            return values.Select(v => new WeatherDataPoint()
+            {
+                Timestamp = v.Timestamp,
+                Value = new WeatherDataValue() {Temperature = v.AirTemp}
+            }).OrderBy(v => v.Timestamp);
         }
+    }
+
+    public class WeatherDataPayload
+    {
+        public DateTime Timestamp { get; set; }
+        public float AirTemp { get; set; } 
     }
 
     public class WeatherDataPoint : IDataPoint<WeatherDataValue>

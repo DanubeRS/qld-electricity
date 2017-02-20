@@ -5,3 +5,8 @@ export interface EnergyDataPoint {
     timestamp: Date;
     value: number;
 }
+
+export interface WeatherDataPoint {
+    timestamp: Date;
+    value: number;
+}

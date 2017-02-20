@@ -6,7 +6,20 @@
 //----------------------
 
 
-export class Client {
+export interface IClient {
+    /**
+     * Gets power consumption data, with an optional window specified
+     * @return Success
+     */
+    apiDataPowerGet(begin: Date, end: Date): Promise<PowerDataResponseModel>;
+    /**
+     * Gets power consumption data, with an optional window specified
+     * @return Success
+     */
+    apiDataWeatherByStationIdGet(stationId: string, begin: Date, end: Date): Promise<WeatherDataResponseModel>;
+}
+
+export class Client implements IClient {
     private baseUrl: string; 
     private http: { fetch(url: RequestInfo, init?: RequestInit): Promise<Response> };
     protected jsonParseReviver: ((key: string, value: any) => any) | undefined = undefined;
@@ -47,6 +60,54 @@ export class Client {
             if (status === 200) {
                 let result200: PowerDataResponseModel = null;
                 result200 = responseText === "" ? null : <PowerDataResponseModel>JSON.parse(responseText, this.jsonParseReviver);
+                return result200;
+            } else if (status === 404) {
+                this.throwException("A server error occurred.", status, responseText);
+            } else if (status === 400) {
+                let result400: ErrorResponseModel = null;
+                result400 = responseText === "" ? null : <ErrorResponseModel>JSON.parse(responseText, this.jsonParseReviver);
+                this.throwException("A server error occurred.", status, responseText, result400);
+            } else if (status !== 200 && status !== 204) {
+                this.throwException("An unexpected server error occurred.", status, responseText);
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Gets power consumption data, with an optional window specified
+     * @return Success
+     */
+    apiDataWeatherByStationIdGet(stationId: string, begin: Date, end: Date): Promise<WeatherDataResponseModel> {
+        let url_ = this.baseUrl + "/api/data/weather/{stationId}?";
+        if (stationId === undefined || stationId === null)
+            throw new Error("The parameter 'stationId' must be defined.");
+        url_ = url_.replace("{stationId}", encodeURIComponent("" + stationId)); 
+        if (begin !== undefined)
+            url_ += "begin=" + encodeURIComponent("" + begin.toJSON()) + "&"; 
+        if (end !== undefined)
+            url_ += "end=" + encodeURIComponent("" + end.toJSON()) + "&";
+
+        let options_ = <RequestInit>{
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8", 
+                "Accept": "application/json; charset=UTF-8"
+            }
+        };
+
+        return this.http.fetch(url_, options_).then((response: Response) => {
+            return this.processApiDataWeatherByStationIdGet(response);
+        });
+    }
+
+    protected processApiDataWeatherByStationIdGet(response: Response): Promise<WeatherDataResponseModel> {
+        return response.text().then((responseText) => {
+            const status = response.status; 
+
+            if (status === 200) {
+                let result200: WeatherDataResponseModel = null;
+                result200 = responseText === "" ? null : <WeatherDataResponseModel>JSON.parse(responseText, this.jsonParseReviver);
                 return result200;
             } else if (status === 404) {
                 this.throwException("A server error occurred.", status, responseText);
@@ -109,6 +170,22 @@ export interface ErrorResponseModel {
     readonly message?: string;
     /** Additional error context payload */
     payload?: any;
+}
+
+export interface WeatherDataResponseModel {
+    startTime?: Date;
+    endTime?: Date;
+    nodes?: WeatherDataNodeModel[];
+}
+
+export interface WeatherDataNodeModel {
+    timestamp?: Date;
+    station?: string;
+    value?: WeatherDataNodeValueModel;
+}
+
+export interface WeatherDataNodeValueModel {
+    airTemp?: number;
 }
 
 export class SwaggerException extends Error {

@@ -1,19 +1,19 @@
 import {State} from "../store/index";
 import * as DataStore from '../store/reducers/data'
-import {EnergyData} from "../types/data/energyData";
+import {EnergyData, WeatherData} from "../types/data/energyData";
 import {connect, Dispatch, MapDispatchToPropsFunction, MapStateToProps} from "react-redux";
 import * as Chart from "chart.js";
 import * as React from "react";
 import * as ReactDOM from "react-dom";
-import {Client, PowerDataResponseModel} from './../api';
-import {EnergyDataPoint} from "../types/data/energyDataPoint";
+import {Client, PowerDataResponseModel, WeatherDataResponseModel} from './../api';
+import {EnergyDataPoint, WeatherDataPoint} from "../types/data/energyDataPoint";
 import {ChartDataSets, ChartPoint, LinearChartData} from "chart.js";
 /**
  * Created by daniel on 19/2/17.
  */
 
 const mapStateToProps: MapStateToProps<StateProps, any> = (state: State) => (
-    {data: state.data.energy}
+    {energy: state.data.energy, weather: state.data.weather}
 );
 
 const mapDispatchToProps: MapDispatchToPropsFunction<DispatchProps, any> = (dispatch, ownProps) => (
@@ -21,7 +21,8 @@ const mapDispatchToProps: MapDispatchToPropsFunction<DispatchProps, any> = (disp
 );
 
 interface StateProps {
-    data: EnergyData
+    energy: EnergyData;
+    weather: WeatherData;
 }
 
 interface DispatchProps {
@@ -39,13 +40,26 @@ function mapEnergyData(model: PowerDataResponseModel): Promise<EnergyData> {
     } as EnergyData;
     return Promise.resolve(mapped);
 }
+
+function mapWeatherData(model: WeatherDataResponseModel): Promise<EnergyData> {
+    let mapped = {
+        start: model.startTime,
+        end: model.endTime,
+        points: model.nodes.map(node => ({
+            timestamp: node.timestamp,
+            value: node.value.airTemp
+        } as EnergyDataPoint))
+    } as EnergyData;
+    return Promise.resolve(mapped);
+}
+
 export class GraphComponent extends React.Component<DispatchProps & StateProps, {}> {
     private _ctx: CanvasRenderingContext2D = null;
     private _chart: Chart = null;
 
     componentDidUpdate(prevProps: DispatchProps & StateProps, prevState: {}, prevContext: any): void {
-        if (prevProps.data !== this.props.data) {
-            if (prevProps.data === null)
+        if (prevProps !== this.props) {
+            if (prevProps.weather === null && prevProps.energy === null)
                 this.setGraphData();
             this.updateGraphData();
         }
@@ -54,7 +68,7 @@ export class GraphComponent extends React.Component<DispatchProps & StateProps, 
     render(): JSX.Element | any {
         return <div className="energy-chart">
             <button type="button" onClick={e => this.updateChart()}>Update chart</button>
-            <canvas width={400} height={400}></canvas>
+            <canvas width={800} height={800}></canvas>
         </div>
     }
 
@@ -79,24 +93,61 @@ export class GraphComponent extends React.Component<DispatchProps & StateProps, 
                 scales: {
                     xAxes: [{
                         type: 'time',
+                        id: 'time',
                         position: 'bottom',
                         time: {
                             displayFormats: {
                                 quarter: 'h:mm:ss a'
                             }
                         }
-                    }]
-                }, responsive: false
+                    }],
+                    yAxes: [
+                        {id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear'},
+                        {id: 'temperature', scaleLabel: 'Temperature (c)', position: 'right', display: true, type: 'linear', ticks: {
+                        min: -10, max: 50
+                        }}
+                    ]
+                }, responsive: false,
             }
         })
     }
 
     private mapDataset(): ChartDataSets[] {
-        return [{
-            label: "Energex",
-            backgroundColor: 'green',
-            data: this.props.data.points.map((p: EnergyDataPoint) => ({x: p.timestamp, y: p.value} as ChartPoint))
-        }];
+        let dataset : ChartDataSets[] = [];
+        let test = false;
+
+        if (this.props.energy){
+            dataset.push({
+                label: "Energex",
+                backgroundColor: 'green',
+                data: (this.props.energy || {points: [] as EnergyDataPoint[]}).points.map((p: EnergyDataPoint) => ({x: p.timestamp, y: p.value} as ChartPoint)),
+                lineTension: 0.5,
+                fill: false,
+                borderWidth: 5,
+                borderColor : 'green',
+                pointRadius: 0,
+                pointHitRadius: 5,
+                yAxisID: 'energy',
+                xAxisID: 'time'
+            });
+        }
+        if (this.props.weather){
+            dataset.push({
+                label: "Temperature",
+                backgroundColor: 'red',
+                data: (this.props.weather || {points: [] as WeatherDataPoint[]}).points.map((p: WeatherDataPoint) => ({x: p.timestamp, y: p.value} as ChartPoint)),
+                lineTension: 0.5,
+                fill: false,
+                borderWidth: 5,
+                borderColor : 'red',
+                pointRadius: 0,
+                pointHitRadius: 5,
+                yAxisID: 'temperature',
+                xAxisID: 'time'
+            });
+
+        }
+        return dataset;
     }
 
     private updateGraphData() {
@@ -127,6 +178,13 @@ export class GraphComponent extends React.Component<DispatchProps & StateProps, 
                 matched.y = newNode.y;
             });
         });
+        //Add new datasets
+        newDataset.forEach(ds => {
+            if ((this._chart.data as LinearChartData).datasets.every(eds => eds.label !== ds.label)){
+                (this._chart.data as LinearChartData).datasets.push(ds);
+            }
+        });
+
         this._chart.update();
     }
 
@@ -138,6 +196,10 @@ export class GraphComponent extends React.Component<DispatchProps & StateProps, 
         yesterday.setDate(today.getDate() - 1);
         api.apiDataPowerGet(yesterday, today).then(m => {
             return mapEnergyData(m).then(d => this.props.dispatch(DataStore.loadedEnergyData(d)))
+        }).then(p => {
+            return api.apiDataWeatherByStationIdGet("1", yesterday, today);
+        }).then(m => {
+            return mapWeatherData(m).then(d => this.props.dispatch(DataStore.loadedWeatherData(d)))
         })
     }
 }

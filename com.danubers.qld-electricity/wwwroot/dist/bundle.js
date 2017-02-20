@@ -25310,6 +25310,7 @@ function warning(message) {
 /* unused harmony export initialState */
 /* harmony export (immutable) */ __webpack_exports__["a"] = loadingEnergyData;
 /* harmony export (immutable) */ __webpack_exports__["b"] = loadedEnergyData;
+/* harmony export (immutable) */ __webpack_exports__["c"] = loadedWeatherData;
 var __assign = (this && this.__assign) || Object.assign || function(t) {
     for (var s, i = 1, n = arguments.length; i < n; i++) {
         s = arguments[i];
@@ -25321,11 +25322,13 @@ var __assign = (this && this.__assign) || Object.assign || function(t) {
 var Actions;
 (function (Actions) {
     Actions[Actions["LoadingData"] = 0] = "LoadingData";
-    Actions[Actions["LoadedData"] = 1] = "LoadedData";
+    Actions[Actions["LoadedWeatherData"] = 1] = "LoadedWeatherData";
+    Actions[Actions["LoadedEnergyData"] = 2] = "LoadedEnergyData";
 })(Actions || (Actions = {}));
 function initialState() {
     return {
         energy: null,
+        weather: null,
         loading: false
     };
 }
@@ -25333,14 +25336,16 @@ const reducer = (state = initialState(), action = { type: null }) => {
     switch (action.type) {
         case Actions.LoadingData:
             return __assign({}, state, { loading: action.isLoading });
-        case Actions.LoadedData:
+        case Actions.LoadedEnergyData:
             return __assign({}, state, { loading: false, energy: action.payload });
+        case Actions.LoadedWeatherData:
+            return __assign({}, state, { loading: false, weather: action.payload });
         default: {
             return state;
         }
     }
 };
-/* harmony export (immutable) */ __webpack_exports__["c"] = reducer;
+/* harmony export (immutable) */ __webpack_exports__["d"] = reducer;
 
 function loadingEnergyData(loading = true) {
     return {
@@ -25350,7 +25355,13 @@ function loadingEnergyData(loading = true) {
 }
 function loadedEnergyData(payload) {
     return {
-        type: Actions.LoadedData,
+        type: Actions.LoadedEnergyData,
+        payload
+    };
+}
+function loadedWeatherData(payload) {
+    return {
+        type: Actions.LoadedWeatherData,
         payload
     };
 }
@@ -52179,6 +52190,48 @@ class Client {
             return null;
         });
     }
+    apiDataWeatherByStationIdGet(stationId, begin, end) {
+        let url_ = this.baseUrl + "/api/data/weather/{stationId}?";
+        if (stationId === undefined || stationId === null)
+            throw new Error("The parameter 'stationId' must be defined.");
+        url_ = url_.replace("{stationId}", encodeURIComponent("" + stationId));
+        if (begin !== undefined)
+            url_ += "begin=" + encodeURIComponent("" + begin.toJSON()) + "&";
+        if (end !== undefined)
+            url_ += "end=" + encodeURIComponent("" + end.toJSON()) + "&";
+        let options_ = {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json; charset=UTF-8",
+                "Accept": "application/json; charset=UTF-8"
+            }
+        };
+        return this.http.fetch(url_, options_).then((response) => {
+            return this.processApiDataWeatherByStationIdGet(response);
+        });
+    }
+    processApiDataWeatherByStationIdGet(response) {
+        return response.text().then((responseText) => {
+            const status = response.status;
+            if (status === 200) {
+                let result200 = null;
+                result200 = responseText === "" ? null : JSON.parse(responseText, this.jsonParseReviver);
+                return result200;
+            }
+            else if (status === 404) {
+                this.throwException("A server error occurred.", status, responseText);
+            }
+            else if (status === 400) {
+                let result400 = null;
+                result400 = responseText === "" ? null : JSON.parse(responseText, this.jsonParseReviver);
+                this.throwException("A server error occurred.", status, responseText, result400);
+            }
+            else if (status !== 200 && status !== 204) {
+                this.throwException("An unexpected server error occurred.", status, responseText);
+            }
+            return null;
+        });
+    }
     throwException(message, status, response, result) {
         if (result !== null && result !== undefined)
             throw result;
@@ -52254,7 +52307,7 @@ class DateRefresher extends __WEBPACK_IMPORTED_MODULE_1_react__["Component"] {
 
 
 
-const mapStateToProps = (state) => ({ data: state.data.energy });
+const mapStateToProps = (state) => ({ energy: state.data.energy, weather: state.data.weather });
 const mapDispatchToProps = (dispatch, ownProps) => ({ dispatch: dispatch });
 function mapEnergyData(model) {
     let mapped = {
@@ -52267,6 +52320,17 @@ function mapEnergyData(model) {
     };
     return Promise.resolve(mapped);
 }
+function mapWeatherData(model) {
+    let mapped = {
+        start: model.startTime,
+        end: model.endTime,
+        points: model.nodes.map(node => ({
+            timestamp: node.timestamp,
+            value: node.value.airTemp
+        }))
+    };
+    return Promise.resolve(mapped);
+}
 class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
     constructor() {
         super(...arguments);
@@ -52274,8 +52338,8 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
         this._chart = null;
     }
     componentDidUpdate(prevProps, prevState, prevContext) {
-        if (prevProps.data !== this.props.data) {
-            if (prevProps.data === null)
+        if (prevProps !== this.props) {
+            if (prevProps.weather === null && prevProps.energy === null)
                 this.setGraphData();
             this.updateGraphData();
         }
@@ -52283,7 +52347,7 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
     render() {
         return __WEBPACK_IMPORTED_MODULE_3_react__["createElement"]("div", { className: "energy-chart" },
             __WEBPACK_IMPORTED_MODULE_3_react__["createElement"]("button", { type: "button", onClick: e => this.updateChart() }, "Update chart"),
-            __WEBPACK_IMPORTED_MODULE_3_react__["createElement"]("canvas", { width: 400, height: 400 }));
+            __WEBPACK_IMPORTED_MODULE_3_react__["createElement"]("canvas", { width: 800, height: 800 }));
     }
     componentDidMount() {
         this._ctx = __WEBPACK_IMPORTED_MODULE_4_react_dom__["findDOMNode"](this).getElementsByTagName('canvas')[0].getContext('2d');
@@ -52302,23 +52366,58 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
                 scales: {
                     xAxes: [{
                             type: 'time',
+                            id: 'time',
                             position: 'bottom',
                             time: {
                                 displayFormats: {
                                     quarter: 'h:mm:ss a'
                                 }
                             }
-                        }]
-                }, responsive: false
+                        }],
+                    yAxes: [
+                        { id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear' },
+                        { id: 'temperature', scaleLabel: 'Temperature (c)', position: 'right', display: true, type: 'linear', ticks: {
+                                min: -10, max: 50
+                            } }
+                    ]
+                }, responsive: false,
             }
         });
     }
     mapDataset() {
-        return [{
+        let dataset = [];
+        let test = false;
+        if (this.props.energy) {
+            dataset.push({
                 label: "Energex",
                 backgroundColor: 'green',
-                data: this.props.data.points.map((p) => ({ x: p.timestamp, y: p.value }))
-            }];
+                data: (this.props.energy || { points: [] }).points.map((p) => ({ x: p.timestamp, y: p.value })),
+                lineTension: 0.5,
+                fill: false,
+                borderWidth: 5,
+                borderColor: 'green',
+                pointRadius: 0,
+                pointHitRadius: 5,
+                yAxisID: 'energy',
+                xAxisID: 'time'
+            });
+        }
+        if (this.props.weather) {
+            dataset.push({
+                label: "Temperature",
+                backgroundColor: 'red',
+                data: (this.props.weather || { points: [] }).points.map((p) => ({ x: p.timestamp, y: p.value })),
+                lineTension: 0.5,
+                fill: false,
+                borderWidth: 5,
+                borderColor: 'red',
+                pointRadius: 0,
+                pointHitRadius: 5,
+                yAxisID: 'temperature',
+                xAxisID: 'time'
+            });
+        }
+        return dataset;
     }
     updateGraphData() {
         let newDataset = this.mapDataset();
@@ -52341,6 +52440,11 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
                 matched.y = newNode.y;
             });
         });
+        newDataset.forEach(ds => {
+            if (this._chart.data.datasets.every(eds => eds.label !== ds.label)) {
+                this._chart.data.datasets.push(ds);
+            }
+        });
         this._chart.update();
     }
     updateChart() {
@@ -52351,6 +52455,10 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
         yesterday.setDate(today.getDate() - 1);
         api.apiDataPowerGet(yesterday, today).then(m => {
             return mapEnergyData(m).then(d => this.props.dispatch(__WEBPACK_IMPORTED_MODULE_0__store_reducers_data__["b" /* loadedEnergyData */](d)));
+        }).then(p => {
+            return api.apiDataWeatherByStationIdGet("1", yesterday, today);
+        }).then(m => {
+            return mapWeatherData(m).then(d => this.props.dispatch(__WEBPACK_IMPORTED_MODULE_0__store_reducers_data__["c" /* loadedWeatherData */](d)));
         });
     }
 }
@@ -52372,7 +52480,7 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
 
 /* harmony default export */ __webpack_exports__["a"] = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_redux__["d" /* combineReducers */])({
     global: __WEBPACK_IMPORTED_MODULE_1__reducers_global__["b" /* reducer */],
-    data: __WEBPACK_IMPORTED_MODULE_2__reducers_data__["c" /* reducer */]
+    data: __WEBPACK_IMPORTED_MODULE_2__reducers_data__["d" /* reducer */]
 });
 
 

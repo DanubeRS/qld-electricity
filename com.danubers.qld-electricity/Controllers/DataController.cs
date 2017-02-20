@@ -82,6 +82,81 @@ namespace Danubers.QldElectricity.Controllers
             };
             return Ok(model);
         }
+
+        /// <summary>
+        /// Gets power consumption data, with an optional window specified
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("weather/{stationId}")]
+        [ProducesResponseType(typeof(WeatherDataResponseModel), (int)HttpStatusCode.OK)]
+        [ProducesResponseType((int)HttpStatusCode.NotFound)]
+        [ProducesResponseType(typeof(ErrorResponseModel), (int)HttpStatusCode.BadRequest)]
+        public async Task<IActionResult> GetWeatherData(string stationId, [FromQuery(Name = "begin")]DateTime? startDate = null, [FromQuery(Name = "end")]DateTime? endDate = null)
+        {
+            var dateTime = DateTime.UtcNow;
+            if (startDate.HasValue && endDate.Value.ToUniversalTime() > dateTime.ToUniversalTime())
+            {
+                return BadRequest(new ErrorResponseModel
+                {
+                    Id = (int)ErrorCodes.BAD_DATE_RANGE,
+                    Message = "Provided date range is not valid",
+                    RequestId = Request.HttpContext.TraceIdentifier,
+                    Payload = new
+                    {
+                        ServerDateTime = dateTime,
+                        FailedCondition = "Date is in the future"
+                    }
+                });
+            }
+            if (startDate.HasValue && endDate.HasValue && startDate.Value.ToUniversalTime() >= endDate.Value.ToUniversalTime())
+            {
+                return BadRequest(new ErrorResponseModel
+                {
+                    Id = (int)ErrorCodes.BAD_DATE_RANGE,
+                    Message = "Provided start date is later than the begin date",
+                    RequestId = Request.HttpContext.TraceIdentifier,
+                    Payload = new
+                    {
+                        StartDate = startDate,
+                        EndDate = endDate
+                    }
+                });
+            }
+            var val = await _dataService.GetWeatherData(stationId, startDate.Value.ToUniversalTime(), endDate.Value.ToUniversalTime());
+            var model = new WeatherDataResponseModel()
+            {
+                StartTime = null,
+                EndTime = null,
+                Nodes = val.Select(v => new WeatherDataNodeModel()
+                {
+                    Timestamp = v.Timestamp,
+                    Value = new WeatherDataNodeValueModel
+                    {
+                        AirTemp = v.Value.Temperature
+                    }
+                }).ToArray()
+            };
+            return Ok(model);
+        }
+    }
+
+    public class WeatherDataResponseModel
+    {
+        public DateTime? StartTime { get; set; }
+        public DateTime? EndTime { get; set; }
+        public WeatherDataNodeModel[] Nodes { get; set; }
+    }
+
+    public class WeatherDataNodeValueModel
+    {
+        public float AirTemp { get; set; }
+    }
+
+    public class WeatherDataNodeModel
+    {
+        public DateTime Timestamp { get; set; }
+        public string Station { get; set; }
+        public WeatherDataNodeValueModel Value { get; set; }
     }
 
     internal enum ErrorCodes
