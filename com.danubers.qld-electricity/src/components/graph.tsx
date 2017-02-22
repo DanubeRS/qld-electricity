@@ -102,7 +102,9 @@ export class GraphComponent extends React.Component<DispatchProps & StateProps, 
                         }
                     }],
                     yAxes: [
-                        {id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear'},
+                        {id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear', ticks: {
+                        min: 0
+                        }},
                         {id: 'temperature', scaleLabel: 'Temperature (c)', position: 'right', display: true, type: 'linear', ticks: {
                         min: -10, max: 50
                         }}

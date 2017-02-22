@@ -139,10 +139,9 @@ namespace Danubers.QldElectricity.Injection
                             }
                         }
                     }
-                    await Task.Delay(6000, _cts.Token);
+                    await Task.Delay((int)TimeSpan.FromMinutes(5).TotalMilliseconds, _cts.Token);
                 }
                 logger.LogDebug("BOM polling successfully cancelled.");
-                return;
             }, _cts.Token);
             return Task.FromResult(true);
         }

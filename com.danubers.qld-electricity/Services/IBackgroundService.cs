@@ -9,6 +9,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Danubers.QldElectricity.Datastore.Models.Bom;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Logging;
@@ -143,32 +144,57 @@ namespace Danubers.QldElectricity
                         logger.LogTrace("Opening connection.");
                         using (var connection = GetConnection())
                         {
-                            logger.LogTrace("Creating data table.");
-                            try
+                            connection.Open();
+                            using (var transaction = connection.BeginTransaction())
                             {
-                                await connection.ExecuteAsync(
-                                    "CREATE TABLE Energex (Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
-                                await connection.ExecuteAsync(
-                                    "CREATE TABLE BomSites" +
-                                    "(Wmo STRING NOT NULL," +
-                                    "HistoryProduct STRING NOT NULL,"+
-                                    "Name STRING NOT NULL)");
-                                await connection.ExecuteAsync(
-                                    "CREATE TABLE BomReadings (" +
-                                    "Timestamp INTEGER NOT NULL," +
-                                    "SiteId STRING NOT NULL," +
-                                    "AirTemp REAL," +
-                                    "Dewpoint REAL," +
-                                    "CloudOktas INT," +
-                                    "WindSpeed INT," +
-                                    "WindDir STRING," +
-                                    "FOREIGN KEY(SiteId) REFERENCES BomSites(Id))"
-                                );
-                            }
-                            catch (Exception e)
-                            {
-                                logger.LogCritical($"Failed to intialise database. {e.Message}");
-                                throw;
+                                logger.LogTrace("Creating data table.");
+                                try
+                                {
+                                    await connection.ExecuteAsync(
+                                        "CREATE TABLE Energex (Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
+                                    await connection.ExecuteAsync(
+                                        "CREATE TABLE BomSites" +
+                                        "(Wmo STRING NOT NULL," +
+                                        "HistoryProduct STRING NOT NULL," +
+                                        "Name STRING NOT NULL)");
+                                    await connection.ExecuteAsync(
+                                        "CREATE TABLE BomReadings (" +
+                                        "Timestamp INTEGER NOT NULL," +
+                                        "SiteId STRING NOT NULL," +
+                                        "AirTemp REAL," +
+                                        "Dewpoint REAL," +
+                                        "CloudOktas INT," +
+                                        "WindSpeed INT," +
+                                        "WindDir STRING," +
+                                        "FOREIGN KEY(SiteId) REFERENCES BomSites(Id))"
+                                    );
+                                    var bomStations =
+                                        new[]
+                                        {
+                                            new BomStation()
+                                            {
+                                                Id = 1,
+                                                Name = "Brisbane AP",
+                                                HistoryProduct = "IDQ60801",
+                                                Wmo = "94578"
+                                            }
+                                        };
+
+                                    foreach (var station in bomStations)
+                                    {
+                                        await connection.ExecuteAsync(
+                                            "INSERT INTO BomSites (rowid, Wmo, HistoryProduct, Name) VALUES (@Id, @Wmo, @HistoryProduct, @Name)",
+                                            station);
+                                    }
+                                    transaction.Commit();
+                                }
+                                catch
+                                (Exception e)
+                                {
+                                    logger.LogCritical($"Failed to intialise database. {e.Message}");
+                                    transaction.Rollback();
+                                    throw;
+                                }
                             }
                         }
                         _initialised = true;

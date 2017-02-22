@@ -21,11 +21,13 @@ namespace ConsoleApplication
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseStartup<Startup>()
+                .UseUrls("http://*:80", "http://localhost:5000")
                 .Build();
 
             _logger = host.Services.GetService<ILoggerFactory>().CreateLogger<Program>();
             var cts = new CancellationTokenSource();
             Task.Run(async () =>
+
             {
                 _logger.LogDebug("Starting QldElectricity Application");
                 using (var backgroundService = host.Services.GetService<IBackgroundService>())

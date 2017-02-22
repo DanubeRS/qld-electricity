@@ -52375,7 +52375,9 @@ class GraphComponent extends __WEBPACK_IMPORTED_MODULE_3_react__["Component"] {
                             }
                         }],
                     yAxes: [
-                        { id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear' },
+                        { id: 'energy', scaleLabel: 'Energy (MWh)', position: 'left', display: true, type: 'linear', ticks: {
+                                min: 0
+                            } },
                         { id: 'temperature', scaleLabel: 'Temperature (c)', position: 'right', display: true, type: 'linear', ticks: {
                                 min: -10, max: 50
                             } }

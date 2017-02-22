@@ -92,7 +92,7 @@ namespace Danubers.QldElectricity.Injection
                             }
                         }
                     }
-                    await Task.Delay(1000, ct);
+                    await Task.Delay((int)TimeSpan.FromMinutes(5).TotalMilliseconds, ct);
                 }
             });
         }
