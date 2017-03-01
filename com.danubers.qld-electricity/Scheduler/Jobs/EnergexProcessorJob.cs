@@ -8,6 +8,7 @@ using Danubers.QldElectricity.Scheduler;
 using Dapper;
 using FluentScheduler;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Danubers.QldElectricity.Jobs
 {
@@ -15,11 +16,13 @@ namespace Danubers.QldElectricity.Jobs
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly IDataProvider _dataProvider;
+        private readonly IOptions<QldElectricityConfig> _config;
 
-        public EnergexProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider)
+        public EnergexProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider, IOptions<QldElectricityConfig> config)
         {
             _loggerFactory = loggerFactory;
             _dataProvider = dataProvider;
+            _config = config;
         }
 
         protected override async Task ExecuteAsync(CancellationToken ct)

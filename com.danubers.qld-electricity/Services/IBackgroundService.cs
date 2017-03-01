@@ -12,7 +12,9 @@ using System.Threading.Tasks;
 using Danubers.QldElectricity.Datastore.Models.Bom;
 using Dapper;
 using Microsoft.Data.Sqlite;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Danubers.QldElectricity
 {
@@ -57,10 +59,15 @@ namespace Danubers.QldElectricity
     class SQLiteDataProvider : IDataProvider
     {
         private readonly ILoggerFactory _loggerFactory;
+        private readonly SqliteConfiguration _config;
 
-        public SQLiteDataProvider(ILoggerFactory loggerFactory)
+        public SQLiteDataProvider(ILoggerFactory loggerFactory, IOptions<DatastoreConfig> config)
         {
             _loggerFactory = loggerFactory;
+            if (config.Value.Type != "sqlite")
+                throw new Exception("Bad config");  //TODO
+
+            _config = config.Value.Configuration.Get<SqliteConfiguration>();
             _initialised = false;
         }
 
@@ -74,6 +81,8 @@ namespace Danubers.QldElectricity
 
         public async Task Initialise()
         {
+
+
             var logger = _loggerFactory.CreateLogger<SQLiteDataProvider>();
             using (logger.BeginScope("Initialisation"))
             {
@@ -81,7 +90,7 @@ namespace Danubers.QldElectricity
                 var path =
                     Path.Combine(
                         Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application
-                            .ApplicationBasePath, "data.db");
+                            .ApplicationBasePath, _config.File);
                 logger.LogTrace($"Setting DB path to \"{path}\"");
 
                 var sb = new SqliteConnectionStringBuilder
@@ -169,5 +178,10 @@ namespace Danubers.QldElectricity
         {
             return new SqliteConnection(_connectionString);
         }
+    }
+
+    internal class SqliteConfiguration
+    {
+        public string File { get; set; }
     }
 }

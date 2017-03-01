@@ -5,8 +5,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Danubers.QldElectricity;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Primitives;
 
 namespace ConsoleApplication
 {
@@ -17,6 +19,8 @@ namespace ConsoleApplication
 
         public static void Main(string[] args)
         {
+            //Initiate configuration
+
             var host = new WebHostBuilder()
                 .UseKestrel()
                 .UseContentRoot(Directory.GetCurrentDirectory())
@@ -44,7 +48,6 @@ namespace ConsoleApplication
                 }
 
             }, cts.Token).GetAwaiter().GetResult();
-            //Load in background service singleton
         }
     }
 }

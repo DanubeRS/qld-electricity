@@ -1,0 +1,20 @@
+﻿{
+  "jobs": {
+    "pollers": {
+      "bom": {
+        "enabled": true,
+        "interval": 600000
+      },
+      "energex": {
+        "enabled": true,
+        "interval": 300000
+      }
+    }
+  },
+  "datastore": {
+    "type": "sqlite",
+    "configuration": {
+      "file": "data.db"
+    }
+  } 
+}

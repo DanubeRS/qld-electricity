@@ -19,8 +19,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Configuration\Models\" />
     <Folder Include="Tools\Migration\" />
     <Folder Include="wwwroot\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="qld-electricity.config.json" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.3.0" />

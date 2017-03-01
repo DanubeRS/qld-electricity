@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Net;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -6,6 +7,7 @@ using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Danubers.QldElectricity.Controllers;
 using Danubers.QldElectricity.Factories;
+using Danubers.QldElectricity.Injection;
 using Danubers.QldElectricity.Jobs;
 using FluentScheduler;
 using Microsoft.AspNetCore.Builder;
@@ -15,9 +17,11 @@ using Microsoft.AspNetCore.Http.Internal;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.PlatformAbstractions;
 using Swashbuckle.AspNetCore.Swagger;
 
@@ -26,11 +30,15 @@ namespace Danubers.QldElectricity
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
     public class Startup
     {
+        private static string CONFIG_FILE_NAME = "qld-electricity.config.json";
         public IContainer ApplicationContainer { get; private set; }
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public IServiceProvider ConfigureServices(IServiceCollection services)
         {
+            BindConfiguration(services);
+
+
             services.AddMvc(options =>
             {
                 options.Filters.Add(new TypeFilterAttribute(typeof(ErrorFilter)));
@@ -63,6 +71,14 @@ namespace Danubers.QldElectricity
             StartServices();
 
             return new AutofacServiceProvider(ApplicationContainer);
+        }
+
+        private void BindConfiguration(IServiceCollection services)
+        {
+            var config = new ConfigurationBuilder().SetBasePath(Directory.GetCurrentDirectory()).AddJsonFile(CONFIG_FILE_NAME).Build();
+            services.AddOptions();
+            services.Configure<QldElectricityConfig>(config);
+            services.Configure<DatastoreConfig>(config.GetSection("datastore"));
         }
 
         private void InitialiseDatastore()
@@ -100,6 +116,32 @@ namespace Danubers.QldElectricity
                 c.SwaggerEndpoint("/api-docs/v1/swagger.json", "API v1");
             });
         }
+    }
+
+    public class QldElectricityConfig
+    {
+        public JobsConfig Jobs { get; set; }
+    }
+
+    public class DatastoreConfig
+    {
+        public string Type { get; set; }
+        public IConfigurationSection Configuration { get; set; }
+    }
+
+    public class JobsConfig
+    {
+        public PollersConfig Pollers { get; set; }
+    }
+
+    public class PollersConfig
+    {
+        public EnergexConfig Energex { get; set; }
+    }
+
+    public class EnergexConfig
+    {
+        public bool Enabled { get; set; }
     }
 
     public class ErrorFilter : ExceptionFilterAttribute

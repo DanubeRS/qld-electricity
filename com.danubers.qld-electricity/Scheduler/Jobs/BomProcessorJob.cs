@@ -11,6 +11,7 @@ using Danubers.QldElectricity.Injection;
 using Danubers.QldElectricity.Scheduler;
 using Dapper;
 using FluentScheduler;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
@@ -21,7 +22,7 @@ namespace Danubers.QldElectricity.Jobs
         private readonly ILoggerFactory _loggerFactory;
         private readonly IDataProvider _dataProvider;
 
-        public BomProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider)
+        public BomProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider, IConfiguration config)
         {
             _loggerFactory = loggerFactory;
             _dataProvider = dataProvider;
