@@ -29,22 +29,72 @@ namespace Danubers.QldElectricity.Jobs
                 rawReadings = (await conn.QueryAsync<EnergexPayload>("SELECT * FROM Energex")).ToList();
             }
 
-            var averageReadings = new Dictionary<Tuple<int, int>, PowerStat>();
-            foreach (var hour in Enumerable.Range(0,23))
-            {
-                foreach (var minute in Enumerable.Range(0, 5).Select(r => r * 10))
-                {
-                    var time = new Tuple<int, int>(hour, minute);
-                    var timeReading =
-                        rawReadings.Where(
-                            r =>
-                                r.Timestamp.Hour == hour && r.Timestamp.Minute >= minute &&
-                                r.Timestamp.Minute < minute + 10).ToList();
+            var averageReadings = new Dictionary<Timeslot, PowerStat>();
 
-                    if (!timeReading.Any())
-                        continue;
-                    var stat = new PowerStat(){Mean = timeReading.Average(r => r.Value)};
-                    averageReadings.Add(time, stat);
+            foreach (var day in Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>())
+            {
+                //Calculate averages for minutes
+                foreach (var hour in Enumerable.Range(0, 23))
+                {
+                    {
+                        //Overall hourly averages
+                        var time = new Timeslot() {Hour = hour};
+                            var timeReading =
+                                rawReadings.Where(
+                                    r =>
+                                        r.Timestamp.Hour == hour).ToList();
+
+                        if (!timeReading.Any())
+                            continue;
+                        var stat = new PowerStat() { Mean = timeReading.Average(r => r.Value) };
+                        averageReadings.Add(time, stat);
+                    }
+                    {
+                        //Daily hourly averages
+                        var time = new Timeslot() { Hour = hour, Day = day};
+                        var timeReading =
+                            rawReadings.Where(
+                                r =>
+                                    r.Timestamp.Hour == hour && r.Timestamp.DayOfWeek == day).ToList();
+
+                        if (!timeReading.Any())
+                            continue;
+                        var stat = new PowerStat() { Mean = timeReading.Average(r => r.Value) };
+                        averageReadings.Add(time, stat);
+                    }
+                    foreach (var minute in Enumerable.Range(0, 5).Select(r => r * 10))
+                    {
+                        {
+                            //Overall minute averages
+                            var time = new Timeslot() {Hour = hour, Minute = minute};
+                            var timeReading =
+                                rawReadings.Where(
+                                    r =>
+                                        r.Timestamp.Hour == hour && r.Timestamp.Minute >= minute &&
+                                        r.Timestamp.Minute < minute + 10).ToList();
+
+                            if (!timeReading.Any())
+                                continue;
+                            var stat = new PowerStat() {Mean = timeReading.Average(r => r.Value)};
+                            averageReadings.Add(time, stat);
+                        }
+
+                        //Daily minute averages
+                        {
+                            var time = new Timeslot() {Day = day, Hour = hour, Minute = minute};
+                            var timeReading =
+                                rawReadings.Where(
+                                    r =>
+                                        r.Timestamp.Hour == hour && r.Timestamp.Minute >= minute &&
+                                        r.Timestamp.Minute < minute + 10 && 
+                                        r.Timestamp.DayOfWeek == day).ToList();
+
+                            if (!timeReading.Any())
+                                continue;
+                            var stat = new PowerStat() {Mean = timeReading.Average(r => r.Value)};
+                            averageReadings.Add(time, stat);
+                        }
+                    }
                 }
             }
 
@@ -54,11 +104,11 @@ namespace Danubers.QldElectricity.Jobs
                 using (var transaction = conn.BeginTransaction())
                 {
                     var query =
-                        "REPLACE INTO PowerSummary (Hour, Minute, Day, Value) VALUES (@day, @minute, @hour, @value)";
+                        "REPLACE INTO PowerSummary (Day, Minute, Hour, Value) VALUES (@day, @minute, @hour, @value)";
                     foreach (var reading in averageReadings)
                     {
                         await conn.ExecuteAsync(query,
-                            new {day = (string)null, hour = reading.Key.Item1, minute = reading.Key.Item2, value = reading.Value.Mean});
+                            new {day = reading.Key.Day == null ? null : Enum.GetName(typeof(DayOfWeek), reading.Key.Day), hour = reading.Key.Hour, minute = reading.Key.Minute, value = reading.Value.Mean});
                     }
                     transaction.Commit();
                 }
@@ -69,6 +119,17 @@ namespace Danubers.QldElectricity.Jobs
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
             await GeneratePowerSummary();
+        }
+    }
+
+    internal class Timeslot : IEquatable<Timeslot>
+    {
+        public DayOfWeek? Day { get; set; }
+        public int? Hour { get; set; }
+        public int? Minute { get; set; }
+        public bool Equals(Timeslot other)
+        {
+            return Day == other.Day && Hour == other.Hour && Minute == other.Minute;
         }
     }
 
