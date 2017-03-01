@@ -6,6 +6,8 @@ namespace Danubers.QldElectricity.Jobs
     {
         public DefaultRegistry()
         {
+            NonReentrantAsDefault();
+
             Schedule<BomProcessorJob>().WithName(typeof(BomProcessorJob).FullName).ToRunNow().AndEvery(10).Minutes();
             Schedule<EnergexProcessorJob>().WithName(typeof(EnergexProcessorJob).FullName).ToRunNow().AndEvery(5).Minutes();
 

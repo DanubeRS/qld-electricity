@@ -65,7 +65,7 @@ namespace Danubers.QldElectricity.Jobs
         protected override async Task ExecuteAsync(CancellationToken ct)
         {
 
-            var logger = _loggerFactory.CreateLogger<BomProcessor>();
+            var logger = _loggerFactory.CreateLogger<BomProcessorJob>();
             ImmutableArray<BomStation> stations;
             using (logger.BeginScope("PollForStations"))
             {

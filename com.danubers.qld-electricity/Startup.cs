@@ -59,9 +59,15 @@ namespace Danubers.QldElectricity
             builder.Populate(services);
             ApplicationContainer = builder.Build();
 
+            InitialiseDatastore();
             StartServices();
 
             return new AutofacServiceProvider(ApplicationContainer);
+        }
+
+        private void InitialiseDatastore()
+        {
+            ApplicationContainer.Resolve<IDataProvider>().Initialise().Wait();
         }
 
         private void StartServices()
@@ -108,7 +114,7 @@ namespace Danubers.QldElectricity
         {
             var exception = context.Exception;
 
-            context.HttpContext.Response.StatusCode = (int) HttpStatusCode.InternalServerError;
+            context.HttpContext.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             var errorModel = new ErrorResponseModel()
             {
                 Id = -1,
@@ -117,7 +123,7 @@ namespace Danubers.QldElectricity
             };
 
             if (_environment.IsDevelopment())
-                errorModel.Payload = new {Exception = exception.Message};
+                errorModel.Payload = new { Exception = exception.Message };
 
             context.Result = new JsonResult(errorModel);
         }

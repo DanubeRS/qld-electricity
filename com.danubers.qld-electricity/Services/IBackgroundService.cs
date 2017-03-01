@@ -26,34 +26,15 @@ namespace Danubers.QldElectricity
     {
         private readonly ILoggerFactory _loggerFactory;
         private readonly IDataProvider _datastore;
-        private readonly IEnumerable<IBackgroundProcessor> _processors;
 
-        public DefaultBackgroundService(ILoggerFactory loggerFactory, IDataProvider datastore, IEnumerable<IBackgroundProcessor> processors)
+        public DefaultBackgroundService(ILoggerFactory loggerFactory, IDataProvider datastore)
         {
             _loggerFactory = loggerFactory;
             _datastore = datastore;
-            _processors = processors;
         }
 
         public async Task Initiate()
         {
-            var logger = _loggerFactory.CreateLogger<IBackgroundService>();
-            using (logger.BeginScope("Initiation"))
-            {
-                logger.LogDebug("Initiating background service");
-                logger.LogTrace("Checking if datastore is ready");
-                if (!_datastore.IsReady())
-                {
-                    logger.LogTrace("Datastore not ready. Initialising.");
-                    logger.LogDebug("Initiating datastore");
-                    await _datastore.Initialise();
-                }
-                else
-                {
-                    logger.LogTrace("Datastore is already initialised");
-                }
-                logger.LogInformation("Background service initiated");
-            }
         }
 
         public void Dispose()
@@ -63,30 +44,7 @@ namespace Danubers.QldElectricity
         public async Task RunServices(CancellationToken ct)
         {
             //TODO
-            //Tidy up services!
-            foreach (var process in _processors)
-            {
-                await process.Start(ct);
-            }
-
-            while (!ct.IsCancellationRequested)
-            {
-                await Task.Delay(1000, ct);
-            }
-
-            foreach (var process in _processors)
-            {
-                await process.Stop(CancellationToken.None);
-            }
-
         }
-    }
-
-    internal interface IBackgroundProcessor
-    {
-        bool Running { get; }
-        Task Start(CancellationToken ct);
-        Task Stop(CancellationToken ct);
     }
 
     public interface IDataProvider

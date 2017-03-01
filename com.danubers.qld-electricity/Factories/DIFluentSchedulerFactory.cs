@@ -3,11 +3,11 @@ using FluentScheduler;
 
 namespace Danubers.QldElectricity.Factories
 {
-    public class DIFluentSchedulerFactory : IJobFactory
+    internal class DIFluentSchedulerFactory : IJobFactory
     {
         private readonly IComponentContext _resolver;
 
-        internal DIFluentSchedulerFactory(IComponentContext resolver)
+        public DIFluentSchedulerFactory(IComponentContext resolver)
         {
             _resolver = resolver;
         }
