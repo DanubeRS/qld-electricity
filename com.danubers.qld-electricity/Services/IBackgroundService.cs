@@ -135,6 +135,14 @@ namespace Danubers.QldElectricity
                                         "WindDir STRING," +
                                         "FOREIGN KEY(SiteId) REFERENCES BomSites(Id))"
                                     );
+                                    await connection.ExecuteAsync(
+                                        "CREATE TABLE PowerSummary (" +
+                                        "Hour INT," +
+                                        "Minute INT," +
+                                        "Day STRING," +
+                                        "Value REAL," +
+                                        "CONSTRAINT pk_Key PRIMARY KEY (Hour, Minute, Day))"
+                                    );
                                     var bomStations =
                                         new[]
                                         {

@@ -22,7 +22,7 @@ namespace Danubers.QldElectricity.Jobs
         private readonly ILoggerFactory _loggerFactory;
         private readonly IDataProvider _dataProvider;
 
-        public BomProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider, IConfiguration config)
+        public BomProcessorJob(ILoggerFactory loggerFactory, IDataProvider dataProvider)
         {
             _loggerFactory = loggerFactory;
             _dataProvider = dataProvider;
