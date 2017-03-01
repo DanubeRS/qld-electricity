@@ -19,12 +19,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Folder Include="Tools\Migration\" />
     <Folder Include="wwwroot\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Autofac" Version="4.3.0" />
     <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="4.0.0" />
     <PackageReference Include="Dapper" Version="1.50.2" />
+    <PackageReference Include="FluentScheduler" Version="5.1.3" />
     <PackageReference Include="Microsoft.AspNetCore" Version="1.1.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="1.1.1" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="1.1.1" />
@@ -32,7 +34,8 @@
     <PackageReference Include="Microsoft.Data.SQLite" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging" Version="1.1.0" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="1.1.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="1.0.0-rc1" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="1.0.0-rc3" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="1.0.0-rc3" />
     <PackageReference Include="System.Data.SQLite" Version="1.0.104" />
   </ItemGroup>
   <Target Name="AfterBuild">

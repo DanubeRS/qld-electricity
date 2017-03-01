@@ -1,6 +1,7 @@
-﻿using Autofac;
+using Autofac;
+using Danubers.QldElectricity.Injection;
 
-namespace Danubers.QldElectricity.Injection
+namespace Danubers.QldElectricity.Jobs
 {
     public class Core : Module
     {
@@ -10,10 +11,12 @@ namespace Danubers.QldElectricity.Injection
 
         protected override void Load(ContainerBuilder builder)
         {
-            builder.RegisterModule<Services>()
+            builder.RegisterModule<Injection.Services>()
                 .RegisterModule<Repositories>()
-                .RegisterModule<Factories>();
+                .RegisterModule<Injection.Factories>()
+                .RegisterModule<Scheduler>();
             builder.RegisterType<SQLiteDataProvider>().As<IDataProvider>().SingleInstance();
+
         }
     }
 }

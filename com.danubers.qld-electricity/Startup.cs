@@ -5,6 +5,9 @@ using System.Threading.Tasks;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
 using Danubers.QldElectricity.Controllers;
+using Danubers.QldElectricity.Factories;
+using Danubers.QldElectricity.Jobs;
+using FluentScheduler;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -50,12 +53,24 @@ namespace Danubers.QldElectricity
             });
 
             var builder = new ContainerBuilder();
-            builder.RegisterModule<Injection.Core>();
+            builder.RegisterModule<Core>();
             builder.RegisterType<HttpContextAccessor>().As<IHttpContextAccessor>();
+
             builder.Populate(services);
             ApplicationContainer = builder.Build();
 
+            StartServices();
+
             return new AutofacServiceProvider(ApplicationContainer);
+        }
+
+        private void StartServices()
+        {
+            //Start fluent scheduler
+            var jobFactory = ApplicationContainer.Resolve<IJobFactory>();
+            var jobRegistry = ApplicationContainer.Resolve<Registry>();
+            JobManager.JobFactory = jobFactory;
+            JobManager.Initialize(jobRegistry);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -74,7 +89,7 @@ namespace Danubers.QldElectricity
             {
                 c.RouteTemplate = "api-docs/{documentName}/swagger.json";
             });
-            app.UseSwaggerUi(c =>
+            app.UseSwaggerUI(c =>
             {
                 c.SwaggerEndpoint("/api-docs/v1/swagger.json", "API v1");
             });
