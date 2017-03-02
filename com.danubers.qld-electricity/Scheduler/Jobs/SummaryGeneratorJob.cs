@@ -34,7 +34,7 @@ namespace Danubers.QldElectricity.Jobs
             foreach (var day in Enum.GetValues(typeof(DayOfWeek)).Cast<DayOfWeek>())
             {
                 //Calculate averages for minutes
-                foreach (var hour in Enumerable.Range(0, 23))
+                foreach (var hour in Enumerable.Range(0, 24))
                 {
                     {
                         //Overall hourly averages
@@ -62,7 +62,7 @@ namespace Danubers.QldElectricity.Jobs
                         var stat = new PowerStat() { Mean = timeReading.Average(r => r.Value) };
                         averageReadings.Add(time, stat);
                     }
-                    foreach (var minute in Enumerable.Range(0, 5).Select(r => r * 10))
+                    foreach (var minute in Enumerable.Range(0, 6).Select(r => r * 10))
                     {
                         {
                             //Overall minute averages
@@ -103,17 +103,20 @@ namespace Danubers.QldElectricity.Jobs
                 conn.Open();
                 using (var transaction = conn.BeginTransaction())
                 {
+                    //Check if value exists
                     var query =
                         "REPLACE INTO PowerSummary (Day, Minute, Hour, Value) VALUES (@day, @minute, @hour, @value)";
                     foreach (var reading in averageReadings)
                     {
                         await conn.ExecuteAsync(query,
-                            new {day = reading.Key.Day == null ? null : Enum.GetName(typeof(DayOfWeek), reading.Key.Day), hour = reading.Key.Hour, minute = reading.Key.Minute, value = reading.Value.Mean});
+                            new {day = (reading.Key.Day.HasValue ? (int?)reading.Key.Day.Value : null) ?? -1, hour = reading.Key.Hour, minute = reading.Key.Minute, value = reading.Value.Mean});
                     }
                     transaction.Commit();
                 }
             }
-
+            averageReadings = null;
+            rawReadings = null;
+            GC.Collect();
         }
 
         protected override async Task ExecuteAsync(CancellationToken ct)
@@ -125,8 +128,8 @@ namespace Danubers.QldElectricity.Jobs
     internal class Timeslot : IEquatable<Timeslot>
     {
         public DayOfWeek? Day { get; set; }
-        public int? Hour { get; set; }
-        public int? Minute { get; set; }
+        public int Hour { get; set; } = -1;
+        public int Minute { get; set; } = -1;
         public bool Equals(Timeslot other)
         {
             return Day == other.Day && Hour == other.Hour && Minute == other.Minute;

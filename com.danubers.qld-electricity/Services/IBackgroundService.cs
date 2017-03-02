@@ -11,6 +11,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Danubers.QldElectricity.Datastore.Models.Bom;
 using Dapper;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.Data.Sqlite;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -59,11 +60,13 @@ namespace Danubers.QldElectricity
     class SQLiteDataProvider : IDataProvider
     {
         private readonly ILoggerFactory _loggerFactory;
+        private readonly IHostingEnvironment _env;
         private readonly SqliteConfiguration _config;
 
-        public SQLiteDataProvider(ILoggerFactory loggerFactory, IOptions<DatastoreConfig> config)
+        public SQLiteDataProvider(ILoggerFactory loggerFactory, IOptions<DatastoreConfig> config, IHostingEnvironment env)
         {
             _loggerFactory = loggerFactory;
+            _env = env;
             if (config.Value.Type != "sqlite")
                 throw new Exception("Bad config");  //TODO
 
@@ -87,22 +90,21 @@ namespace Danubers.QldElectricity
             using (logger.BeginScope("Initialisation"))
             {
                 logger.LogDebug("Begin initialisation.");
-                var path =
-                    Path.Combine(
-                        Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application
-                            .ApplicationBasePath, _config.File);
-                logger.LogTrace($"Setting DB path to \"{path}\"");
+
+                var filePath = _config.File;
+
+                logger.LogTrace($"Setting DB path to \"{filePath}\"");
 
                 var sb = new SqliteConnectionStringBuilder
                 {
-                    DataSource = path,
+                    DataSource = filePath,
                     Mode = SqliteOpenMode.ReadWriteCreate
                 };
                 _connectionString = sb.ConnectionString;
                 logger.LogTrace($"Setting DB connection string to \"{_connectionString}\"");
 
                 logger.LogTrace("Checking if DB exists");
-                if (!File.Exists(path))
+                if (!File.Exists(filePath))
                 {
                     logger.LogDebug("DB does not exist. Creating.");
                     using (logger.BeginScope("Create Tables"))
@@ -118,12 +120,12 @@ namespace Danubers.QldElectricity
                                 try
                                 {
                                     await connection.ExecuteAsync(
-                                        "CREATE TABLE Energex (Timestamp INTEGER NOT NULL, Type STRING NOT NULL, Value REAL NOT NULL)");
+                                        "CREATE TABLE Energex (Timestamp INTEGER NOT NULL, Type TEXT NOT NULL, Value REAL NOT NULL)");
                                     await connection.ExecuteAsync(
                                         "CREATE TABLE BomSites" +
                                         "(Wmo STRING NOT NULL," +
-                                        "HistoryProduct STRING NOT NULL," +
-                                        "Name STRING NOT NULL)");
+                                        "HistoryProduct TEXT NOT NULL," +
+                                        "Name TEXT NOT NULL)");
                                     await connection.ExecuteAsync(
                                         "CREATE TABLE BomReadings (" +
                                         "Timestamp INTEGER NOT NULL," +
@@ -132,16 +134,17 @@ namespace Danubers.QldElectricity
                                         "Dewpoint REAL," +
                                         "CloudOktas INT," +
                                         "WindSpeed INT," +
-                                        "WindDir STRING," +
+                                        "WindDir TEXT," +
                                         "FOREIGN KEY(SiteId) REFERENCES BomSites(Id))"
                                     );
                                     await connection.ExecuteAsync(
                                         "CREATE TABLE PowerSummary (" +
-                                        "Hour INT," +
-                                        "Minute INT," +
-                                        "Day STRING," +
+                                        "Hour INT NOT NULL," +
+                                        "Minute INT NOT NULL," +
+                                        "Day INT NOT NULL," +
                                         "Value REAL," +
-                                        "CONSTRAINT pk_Key PRIMARY KEY (Hour, Minute, Day))"
+                                        "CONSTRAINT pk_Key PRIMARY KEY (Hour, Minute, Day)" +
+                                        ")"
                                     );
                                     var bomStations =
                                         new[]

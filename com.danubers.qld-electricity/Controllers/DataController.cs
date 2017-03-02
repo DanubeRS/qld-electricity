@@ -27,7 +27,7 @@ namespace Danubers.QldElectricity.Controllers
         }
 
         /// <summary>
-        /// Gets power consumption data, with an optional window specified
+        /// Gets power consumption data, with an optional window specified.
         /// </summary>
         /// <returns></returns>
         [HttpGet("power")]
@@ -37,7 +37,7 @@ namespace Danubers.QldElectricity.Controllers
         public async Task<IActionResult> GetPowerData([FromQuery(Name = "begin")]DateTime? startDate = null, [FromQuery(Name = "end")]DateTime? endDate = null)
         {
             var dateTime = DateTime.UtcNow;
-            if (startDate.HasValue && endDate.Value.ToUniversalTime() > dateTime.ToUniversalTime())
+            if (startDate.HasValue && endDate.Value.ToUniversalTime() > dateTime.ToUniversalTime().AddSeconds(30))
             {
                 return BadRequest(new ErrorResponseModel
                 {
@@ -47,7 +47,7 @@ namespace Danubers.QldElectricity.Controllers
                     Payload = new
                     {
                         ServerDateTime = dateTime,
-                        FailedCondition = "Date is in the future"
+                        FailedCondition = "Date is in the future. Service allows up to 30s disagreement in range."
                     }
                 });
             }

@@ -13,7 +13,8 @@ namespace Danubers.QldElectricity.Jobs
 
 
             //Run summary generator
-            Schedule<SummaryGeneratorJob>().WithName("summary").ToRunOnceAt(0, 0).AndEvery(1).Days().At(0, 0);
+//            Schedule<SummaryGeneratorJob>().WithName("summary").ToRunOnceAt(0, 0).AndEvery(1).Days().At(0, 0);
+            Schedule<SummaryGeneratorJob>().ToRunNow().AndEvery(10).Seconds();
         }
     }
 }

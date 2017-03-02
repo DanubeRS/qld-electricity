@@ -14,7 +14,7 @@
   "datastore": {
     "type": "sqlite",
     "configuration": {
-      "file": "data.db"
+      "file": "./data.db"
     }
   } 
 }
